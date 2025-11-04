@@ -1,5 +1,8 @@
-import threading
+import os
 import sqlite3
+import threading
+import traceback
+
 
 class Database:
     filename: str
@@ -8,6 +11,8 @@ class Database:
     @staticmethod
     def init(filename: str):
         Database.filename = filename
+        if not os.path.exists(Database.filename):
+            open(Database.filename, "w").close()
         Database.mutex = threading.Lock()
         with Database() as db:
             db.create_tables()
@@ -23,16 +28,28 @@ class Database:
     def write(self):
         self.__connection.commit()
 
-    def execute(self, sql: str, params: tuple):
-        self.__cursor.execute(sql, params)
+    def execute(self, sql: str, params: tuple) -> bool:
+        try:
+            self.__cursor.execute(sql, params)
+        except sqlite3.Error:
+            print(f"An error occured running the following query:")
+            print(f"SQL: {sql}\nParams: {params}")
+            traceback.print_exc()
+            self.__connection.rollback()
+            return False
+        return True
 
     def cursor(self) -> sqlite3.Cursor:
         return self.__cursor
+
+    def created_id(self) -> int:
+        return self.__cursor.lastrowid
 
     def __enter__(self):
         self.mutex.acquire()
         self.__connection = sqlite3.connect(self.filename)
         self.__cursor = self.__connection.cursor()
+        self.execute("BEGIN TRANSACTION", ())
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
