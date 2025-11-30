@@ -49,8 +49,20 @@ def habit_get(habit_id: int, response: fastapi.Response):
 
 @router.post("/habit/update")
 def habit_update(info: HabitInfo, response: fastapi.Response):
-    response.status_code = 501
-    return {"error": "Not implemented"}
+    # Expect the HabitInfo to include the id of the habit to update
+    if getattr(info, "id", None) is None:
+        response.status_code = 400
+        return {"error": "habit id required in payload"}
+
+    habit_id = info.id
+    with Database() as db:
+        if db.execute(*SQLHelper.habit_update(info, habit_id)):
+            response.status_code = 200
+            db.write()
+        else:
+            response.status_code = 500
+            return response
+    return {"success": True, "habit_id": habit_id}
 
 @router.get("/habit/list/{account_id}")
 def habit_list(account_id: int, response: fastapi.Response):
