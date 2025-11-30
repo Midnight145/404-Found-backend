@@ -12,3 +12,9 @@ class HabitInfo(pydantic.BaseModel):
     repeat_type: typing.Literal["Daily", "Weekly"]
     reward: str
     reward_frequency: str
+
+
+class UserInfo(pydantic.BaseModel):
+    username: str
+    email: str
+    password_hash: str

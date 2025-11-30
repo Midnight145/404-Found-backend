@@ -49,6 +49,7 @@ class Database:
         self.mutex.acquire()
         self.__connection = sqlite3.connect(self.filename)
         self.__cursor = self.__connection.cursor()
+        self.__connection.row_factory = sqlite3.Row
         self.execute("BEGIN TRANSACTION", ())
         return self
 
@@ -58,3 +59,4 @@ class Database:
 
     def create_tables(self):
         self.__connection.execute("CREATE TABLE IF NOT EXISTS habits (id INTEGER PRIMARY KEY AUTOINCREMENT, account_id INTEGER, habit_name TEXT, habit_desc TEXT, steps TEXT, repeat INTEGER, repeat_type STRING, reward STRING, reward_frequency STRING)")
+        self.__connection.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, email TEXT, password_hash TEXT)")
