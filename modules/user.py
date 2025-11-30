@@ -17,8 +17,8 @@ def user_create(info: UserInfo, response: fastapi.Response):
         else:
             response.status_code = 500
             return response
-        habit_id = db.created_id()
-    return {"habit_id": habit_id}
+        user_id = db.created_id()
+    return {"user_id": user_id}
 
 @router.post("/user/delete")
 def user_delete(user_id: int, response: fastapi.Response):

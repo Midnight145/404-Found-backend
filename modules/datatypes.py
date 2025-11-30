@@ -4,6 +4,7 @@ import pydantic
 
 
 class HabitInfo(pydantic.BaseModel):
+    id: int | None = None
     account_id: int
     habit_name: str
     habit_desc: str

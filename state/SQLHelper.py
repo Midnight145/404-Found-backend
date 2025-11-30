@@ -9,15 +9,18 @@ def habit_create(info: HabitInfo):
     return query, (info.account_id, info.habit_name, info.habit_desc, steps_str, 1 if info.repeat else 0, info.repeat_type, info.reward, info.reward_frequency)
 
 def habit_delete(habit_id: int):
-    query = "DELETE FROM habits WHERE habit_id = ?"
+    query = "DELETE FROM habits WHERE id = ?"
     return query, (habit_id,)
 
 def habit_get(habit_id: int):
-    query = "SELECT * FROM habits WHERE habit_id = ?"
+    query = "SELECT * FROM habits WHERE id = ?"
     return query, (habit_id,)
 
 def habit_update(info: HabitInfo, habit_id: int):
-    raise NotImplementedError("habit_update is not implemented yet")
+    # Update all writable fields for the habit. Steps are stored as JSON.
+    query = "UPDATE habits SET account_id = ?, habit_name = ?, habit_desc = ?, steps = ?, repeat = ?, repeat_type = ?, reward = ?, reward_frequency = ? WHERE id = ?"
+    steps_str = json.dumps(info.steps)
+    return query, (info.account_id, info.habit_name, info.habit_desc, steps_str, 1 if info.repeat else 0, info.repeat_type, info.reward, info.reward_frequency, habit_id)
 
 def habit_list(account_id: int):
     query = "SELECT * FROM habits WHERE account_id = ?"
@@ -36,7 +39,7 @@ def user_get(user_id: int):
     SELECT u.id AS user_id, \
            u.username, \
            u.email, \
-           h.habit_id, \
+        h.id AS habit_id, \
            h.account_id, \
            h.habit_name, \
            h.habit_desc, \

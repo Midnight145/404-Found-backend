@@ -2,3 +2,4 @@ load-dotenv
 fastapi
 pydantic
 uvicorn
+pytest

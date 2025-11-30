@@ -16,6 +16,8 @@ class Database:
         Database.mutex = threading.Lock()
         with Database() as db:
             db.create_tables()
+            # commit created tables so the DB is usable immediately
+            db.write()
 
 
     def __init__(self):
@@ -48,8 +50,9 @@ class Database:
     def __enter__(self):
         self.mutex.acquire()
         self.__connection = sqlite3.connect(self.filename)
-        self.__cursor = self.__connection.cursor()
+        # set row_factory before creating cursor so the cursor returns sqlite3.Row objects
         self.__connection.row_factory = sqlite3.Row
+        self.__cursor = self.__connection.cursor()
         self.execute("BEGIN TRANSACTION", ())
         return self
 
