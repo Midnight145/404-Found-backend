@@ -30,7 +30,7 @@ class Database:
     def write(self):
         self.__connection.commit()
 
-    def execute(self, sql: str, params: tuple) -> bool:
+    def try_execute(self, sql: str, params: tuple) -> bool:
         try:
             self.__cursor.execute(sql, params)
         except sqlite3.Error:
@@ -40,6 +40,9 @@ class Database:
             self.__connection.rollback()
             return False
         return True
+
+    def execute(self, sql: str, params: tuple):
+        return self.__cursor.execute(sql, params)
 
     def cursor(self) -> sqlite3.Cursor:
         return self.__cursor
@@ -53,7 +56,7 @@ class Database:
         # set row_factory before creating cursor so the cursor returns sqlite3.Row objects
         self.__connection.row_factory = sqlite3.Row
         self.__cursor = self.__connection.cursor()
-        self.execute("BEGIN TRANSACTION", ())
+        self.try_execute("BEGIN TRANSACTION", ())
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -61,5 +64,26 @@ class Database:
         self.__connection.close()
 
     def create_tables(self):
-        self.__connection.execute("CREATE TABLE IF NOT EXISTS habits (id INTEGER PRIMARY KEY AUTOINCREMENT, account_id INTEGER, habit_name TEXT, habit_desc TEXT, steps TEXT, repeat INTEGER, repeat_type STRING, reward STRING, reward_frequency STRING)")
-        self.__connection.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, email TEXT, password_hash TEXT)")
+        # Users table (matches backend `UserInfo` model)
+        self.__connection.execute(
+            "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, email TEXT, password TEXT, name TEXT, age INTEGER, role TEXT, createdAt TEXT, type TEXT, theme TEXT, profilePic TEXT, stats TEXT, code TEXT, meta TEXT)"
+        )
+
+        # Tasks table (represents frontend Task objects)
+        self.__connection.execute(
+            "CREATE TABLE IF NOT EXISTS tasks (id INTEGER PRIMARY KEY AUTOINCREMENT, assigneeId TEXT, assigneeName TEXT, title TEXT, notes TEXT, taskType TEXT, steps TEXT, habitToBreak TEXT, replacements TEXT, frequency TEXT, streak INTEGER, completedDates TEXT, status TEXT, createdAt TEXT, createdById TEXT, createdByName TEXT, createdByRole TEXT, needsApproval INTEGER, targetType TEXT, targetName TEXT, meta TEXT)"
+        )
+
+        # Build / Break / Formed habit tables
+        self.__connection.execute(
+            "CREATE TABLE IF NOT EXISTS build_habits (id INTEGER PRIMARY KEY AUTOINCREMENT, account_id INTEGER, goal TEXT, cue TEXT, steps TEXT)"
+        )
+        self.__connection.execute(
+            "CREATE TABLE IF NOT EXISTS break_habits (id INTEGER PRIMARY KEY AUTOINCREMENT, account_id INTEGER, habit TEXT, replacements TEXT, microSteps TEXT, savedOn TEXT)"
+        )
+        self.__connection.execute(
+            "CREATE TABLE IF NOT EXISTS formed_habits (id INTEGER PRIMARY KEY AUTOINCREMENT, userId INTEGER, title TEXT, type TEXT, createdAt TEXT, details TEXT, completedAt TEXT, meta TEXT)"
+        )
+        self.__connection.execute(
+            "CREATE TABLE IF NOT EXISTS children (id INTEGER PRIMARY KEY AUTOINCREMENT, parentId INTEGER, name TEXT, age INTEGER, code TEXT, createdAt TEXT, theme TEXT)"
+        )

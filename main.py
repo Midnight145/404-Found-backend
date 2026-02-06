@@ -4,8 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import load_dotenv
 import os
 from state import database
-from modules import habits
-from modules import tasks, user, login
+from modules import tasks, user, login, child
 
 load_dotenv.load_dotenv()
 db_filename = os.getenv("DATABASE_FILE")
@@ -15,6 +14,7 @@ app.include_router(habits.router)
 app.include_router(tasks.router)
 app.include_router(user.router)
 app.include_router(login.router)
+app.include_router(child.router)
 
 
 @app.exception_handler(RequestValidationError)

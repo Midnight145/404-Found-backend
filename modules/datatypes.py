@@ -94,3 +94,14 @@ class TaskInfo(pydantic.BaseModel):
     targetType: Optional[str] = None
     targetName: Optional[str] = None
     meta: Optional[dict] = {}
+
+
+class ChildInfo(pydantic.BaseModel):
+    """Represents a child account under a parent user."""
+    id: Optional[typing.Union[int, str]] = None
+    parentId: Optional[typing.Union[int, str]] = None
+    name: Optional[str] = None
+    code: Optional[str] = None
+    age: Optional[int] = None
+    createdAt: Optional[int] = None
+    theme: Optional[str] = "pink"

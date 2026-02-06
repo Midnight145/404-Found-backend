@@ -4,7 +4,7 @@ import fastapi
 
 import state
 import util
-from modules.datatypes import UserInfo
+from modules.datatypes import UserInfo, ChildInfo
 from state import SQLHelper
 from state.database import Database
 
@@ -17,12 +17,25 @@ def login(user: UserInfo, response: fastapi.Response):
     # todo: return userinfo or error
     # key = uuid.uuid4().hex
     key = "test_session_token"  # todo: remove this hardcoded token
-    state.sessions[key] = user  # todo: replace with real user info
-    response.set_cookie(key="session_token", value=key)
     full_user = util.get_full_user(user)
+    state.sessions[key] = full_user  # todo: replace with real user info
+    response.set_cookie(key="session_token", value=key)
     full_user.password = ""
 
     return { "success": True, "user": full_user }
+
+@router.post("/login/child")
+def login_child(child_info: ChildInfo, response: fastapi.Response):
+    key = "test_session_token"
+    with Database() as db:
+        row = db.execute(*SQLHelper.child_get_by_code(child_info.code)).fetchone()
+        if not row:
+            response.status_code = 404
+            return {"error": "Child not found"}
+
+        state.sessions[key] = child_info  # todo: replace with real child info
+        response.set_cookie(key="session_token", value=key)
+        return { "success": True, "child": child_info.model_dump_json() }
 
 @router.post("/logout")
 def logout(response: fastapi.Response, session_token: str = fastapi.Cookie(None)):
@@ -46,9 +59,11 @@ def signup(user: UserInfo, response: fastapi.Response):
             return {"error": "user already exists"}
 
     key = "test_session_token"  # todo: remove this hardcoded token
-    state.sessions[key] = user  # todo: replace with real user info
+    full_user = util.get_full_user(user)
+
+    state.sessions[key] = full_user  # todo: replace with real user info
     response.set_cookie(key="session_token", value=key)
-    ret = user
-    user.password = ""
+    full_user.password = ""
+    ret = full_user
     return ret.model_dump_json()
 
