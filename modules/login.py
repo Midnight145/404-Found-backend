@@ -14,11 +14,10 @@ router = fastapi.APIRouter()
 def login(user: UserInfo, response: fastapi.Response):
     # Placeholder logic for user authentication
     # todo: check against database
-    # todo: return userinfo or error
     # key = uuid.uuid4().hex
-    key = "test_session_token"  # todo: remove this hardcoded token
+    key = "test_session_token"  # todo: remove this hardcoded token in favor of `key = uuid.uuid4().hex`
     full_user = util.get_full_user(user)
-    state.sessions[key] = full_user  # todo: replace with real user info
+    state.sessions[key] = full_user
     response.set_cookie(key="session_token", value=key)
     full_user.password = ""
 
@@ -33,7 +32,7 @@ def login_child(child_info: ChildInfo, response: fastapi.Response):
             response.status_code = 404
             return {"error": "Child not found"}
 
-        state.sessions[key] = child_info  # todo: replace with real child info
+        state.sessions[key] = child_info
         response.set_cookie(key="session_token", value=key)
         return { "success": True, "child": child_info.model_dump_json() }
 
@@ -58,10 +57,10 @@ def signup(user: UserInfo, response: fastapi.Response):
             response.status_code = 400
             return {"error": "user already exists"}
 
-    key = "test_session_token"  # todo: remove this hardcoded token
+    key = "test_session_token"  # todo: remove this hardcoded token in favor of `key = uuid.uuid4().hex`
     full_user = util.get_full_user(user)
 
-    state.sessions[key] = full_user  # todo: replace with real user info
+    state.sessions[key] = full_user
     response.set_cookie(key="session_token", value=key)
     full_user.password = ""
     ret = full_user

@@ -76,6 +76,7 @@ class TaskInfo(pydantic.BaseModel):
     id: Optional[typing.Union[int, str]] = None
     assigneeId: Optional[typing.Union[int, str]] = None
     assigneeName: Optional[str] = ""
+    childCode: Optional[int] = -1
     title: str = ""
     notes: Optional[str] = ""
     taskType: Optional[str] = "simple"

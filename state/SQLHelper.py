@@ -154,9 +154,9 @@ def user_get(user_id: int):
 def user_get_by_email(email: str):
     query = (
         "SELECT id, username, email, password, name, age, role, createdAt, type, theme, profilePic, stats, code, meta "
-        "FROM users WHERE email = ?"
+        "FROM users WHERE email = ? OR username = ?"
     )
-    return query, (email,)
+    return query, (email, email)
 
 
 def user_get_with_habits(user_id: int):
@@ -186,7 +186,7 @@ def user_get_with_habits(user_id: int):
 
 def task_create(info: TaskInfo):
     query = (
-        "INSERT INTO tasks (assigneeId, assigneeName, title, notes, taskType, steps, habitToBreak, replacements, frequency, streak, completedDates, status, createdAt, createdById, createdByName, createdByRole, needsApproval, targetType, targetName, meta) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        "INSERT INTO tasks (assigneeId, assigneeName, childCode, title, notes, taskType, steps, habitToBreak, replacements, frequency, streak, completedDates, status, createdAt, createdById, createdByName, createdByRole, needsApproval, targetType, targetName, meta) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     )
     steps_json = json.dumps(info.steps) if info.steps else None
     replacements_json = json.dumps(info.replacements) if info.replacements else None
@@ -197,6 +197,7 @@ def task_create(info: TaskInfo):
     return query, (
         info.assigneeId,
         info.assigneeName,
+        info.childCode,
         info.title,
         info.notes,
         info.taskType,
@@ -228,40 +229,30 @@ def task_get(task_id: int):
     return query, (task_id,)
 
 
-def task_update(info: TaskInfo, task_id: int):
-    query = (
-        "UPDATE tasks SET assigneeId = ?, assigneeName = ?, title = ?, notes = ?, taskType = ?, steps = ?, habitToBreak = ?, replacements = ?, frequency = ?, streak = ?, completedDates = ?, status = ?, createdAt = ?, createdById = ?, createdByName = ?, createdByRole = ?, needsApproval = ?, targetType = ?, targetName = ?, meta = ? WHERE id = ?"
-    )
-    steps_json = json.dumps(info.steps) if info.steps else None
-    replacements_json = json.dumps(info.replacements) if info.replacements else None
-    completed_json = json.dumps(info.completedDates) if info.completedDates else None
-    freq_json = json.dumps(info.frequency) if info.frequency is not None else None
-    meta_json = json.dumps(info.meta) if info.meta else None
-    needs = 1 if info.needsApproval else 0
-    return query, (
-        info.assigneeId,
-        info.assigneeName,
-        info.title,
-        info.notes,
-        info.taskType,
-        steps_json,
-        info.habitToBreak,
-        replacements_json,
-        freq_json,
-        info.streak,
-        completed_json,
-        info.status,
-        info.createdAt,
-        info.createdById,
-        info.createdByName,
-        info.createdByRole,
-        needs,
-        info.targetType,
-        info.targetName,
-        meta_json,
-        task_id,
-    )
+def task_update_partial(fields: dict, task_id: int):
+    """
+    Build a parameterized UPDATE for only the provided task fields.
+    Returns a tuple like (sql, param1, param2, ...)
+    """
+    if not fields:
+        raise ValueError("no fields to update")
 
+    set_clauses = []
+    params = []
+    for col, val in fields.items():
+        # serialize complex types commonly stored as JSON
+        if isinstance(val, (list, dict)):
+            val = json.dumps(val)
+        # convert booleans to integers if DB stores them as ints
+        if isinstance(val, bool):
+            val = int(val)
+        set_clauses.append(f"{col} = ?")
+        params.append(val)
+
+    params.append(task_id)
+    set_clause = ", ".join(set_clauses)
+    sql = f"UPDATE tasks SET {set_clause} WHERE id = ?"
+    return sql, tuple(params)
 
 def task_list(assignee_id: int):
     query = "SELECT * FROM tasks WHERE assigneeId = ?"
@@ -297,3 +288,31 @@ def child_get_by_code(code: str):
 def child_update(child, child_id):
     query = "UPDATE children SET parentId = ?, name = ?, age = ?, code = ?, createdAt = ?, theme = ? WHERE id = ?"
     return query, (child.parentId, child.name, child.age, child.code, child.createdAt, child_id, child.theme)
+
+
+def formed_habit_list(userId):
+    query = "SELECT * FROM formed_habits WHERE userId = ?"
+    return query, (userId,)
+
+def user_update_partial(fields: dict, user_id: int):
+    """
+    Build a parameterized UPDATE for only the provided fields.
+    Returns a tuple like (sql, param1, param2, ...)
+    """
+    if not fields:
+        raise ValueError("no fields to update")
+
+    set_clauses = []
+    params = []
+    for col, val in fields.items():
+        set_clauses.append(f"{col} = ?")
+        params.append(val)
+
+    params.append(user_id)
+    set_clause = ", ".join(set_clauses)
+    sql = f"UPDATE users SET {set_clause} WHERE id = ?"
+    return sql, tuple(params)
+
+def task_list_pending(assignee_id: int):
+    query = "SELECT * FROM tasks WHERE assigneeId = ? AND needsApproval = 1 AND createdByRole = 'provider'"
+    return query, (assignee_id,)

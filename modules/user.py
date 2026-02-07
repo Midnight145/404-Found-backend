@@ -1,4 +1,5 @@
 import json
+from typing import Any
 
 import fastapi
 from fastapi.params import Depends
@@ -52,3 +53,20 @@ def user_get_current(response: fastapi.Response, user: UserInfo = Depends(state.
         return response
     response.status_code = 200
     return json.dumps(dict(row))
+
+@router.post("/user/update")
+def user_update(info: UserInfo, response: fastapi.Response, user: UserInfo = Depends(state.require_user)):
+    updates: dict[str, Any] = info.model_dump(exclude_unset=True)
+    if not updates:
+        response.status_code = 400
+        return {"error": "no fields to update"}
+
+    sql_and_params = SQLHelper.user_update_partial(updates, user.id)
+    with Database() as db:
+        if db.try_execute(*sql_and_params):
+            db.write()
+            response.status_code = 200
+        else:
+            response.status_code = 500
+            return response
+    return {"id": user.id}

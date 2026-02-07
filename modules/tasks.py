@@ -53,12 +53,24 @@ def task_get(task_id: int, response: fastapi.Response, user: UserInfo = Depends(
 
 @router.post("/task/update/")
 def task_update(info: TaskInfo, response: fastapi.Response, user: UserInfo = Depends(state.require_user)):
+    # require id in payload
     if getattr(info, "id", None) is None:
         response.status_code = 400
         return {"error": "task id required in payload"}
     task_id = info.id
+
+    # only include fields actually sent by the client
+    updates = info.model_dump(exclude_unset=True)
+    updates.pop("id", None)
+    if not updates:
+        response.status_code = 400
+        return {"error": "no fields to update"}
+
+    # serialize lists/dicts and convert booleans if needed inside helper,
+    # then build and execute the partial update
+    sql_and_params = SQLHelper.task_update_partial(updates, task_id)
     with Database() as db:
-        if db.try_execute(*SQLHelper.task_update(info, task_id)):
+        if db.try_execute(*sql_and_params):
             response.status_code = 200
             db.write()
         else:
@@ -84,6 +96,18 @@ def task_list(response: fastapi.Response, user: UserInfo | ChildInfo = Depends(s
     response.status_code = 200
     return {"tasks": out}
 
+@router.get("/task/list/pending")
+def task_list_pending(response: fastapi.Response, user: UserInfo = Depends(state.require_user)):
+    with Database() as db:
+        if not db.try_execute(*SQLHelper.task_list_pending(user.id)):
+            response.status_code = 500
+            return response
+        rows = db.cursor().fetchall()
+    out = []
+    for row in rows:
+        out.append(row_to_task(row))
+    response.status_code = 200
+    return {"tasks": out}
 
 def row_to_task(row) -> dict:
     data = dict(row)
