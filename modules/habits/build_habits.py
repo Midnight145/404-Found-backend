@@ -63,7 +63,7 @@ def build_habit_get(habit_id: int, response: fastapi.Response, user: UserInfo = 
 
 
 @util.check_habit_ownership("build")
-@router.post("/habit/build/update/")
+@router.post("/habit/build/update")
 def build_habit_update(info: BuildHabitInfo, response: fastapi.Response, user: UserInfo = Depends(state.require_user)):
     if getattr(info, "id", None) is None:
         response.status_code = 400
@@ -80,10 +80,10 @@ def build_habit_update(info: BuildHabitInfo, response: fastapi.Response, user: U
 
 
 @util.check_habit_ownership("build")
-@router.get("/habit/build/list/{account_id}")
-def build_habit_list(account_id: int, response: fastapi.Response, user: UserInfo = Depends(state.require_user)):
+@router.get("/habit/build/list")
+def build_habit_list(response: fastapi.Response, user: UserInfo = Depends(state.require_user)):
     with Database() as db:
-        if not db.try_execute(*SQLHelper.build_list(account_id)):
+        if not db.try_execute(*SQLHelper.build_list(user.id)):
             response.status_code = 500
             return response
         rows = db.cursor().fetchall()

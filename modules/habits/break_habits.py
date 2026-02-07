@@ -15,6 +15,7 @@ router = fastapi.APIRouter()
 # Break habit endpoints
 @router.post("/habit/break/create")
 def break_habit_create(info: BreakHabitInfo, response: fastapi.Response, user: UserInfo = Depends(state.require_user)):
+    info.account_id = user.id
     with Database() as db:
         if db.try_execute(*SQLHelper.break_create(info)):
             response.status_code = 200

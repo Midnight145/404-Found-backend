@@ -5,10 +5,9 @@ from fastapi.params import Depends
 
 import state
 import util
-from modules.datatypes import HabitInfo, FormedHabitInfo, UserInfo
+from modules.datatypes import FormedHabitInfo, UserInfo
 from state import SQLHelper
 from state.database import Database
-from util import HabitHelper
 
 router = fastapi.APIRouter()
 
@@ -78,80 +77,78 @@ def formed_habit_create(payload: dict, response: fastapi.Response, user: UserInf
         fh.createdAt = date
 
         # insert into formed_habits
-        if db.try_execute(*SQLHelper.habit_create(fh)):
+        if db.try_execute(*SQLHelper.formed_habit_create(fh)):
             db.write()
             formed_id = db.created_id()
             response.status_code = 200
             return {"id": formed_id}
         else:
             response.status_code = 500
-            return response
+            return {"error": "failed to create formed habit"}
 
 
 @util.check_habit_ownership("formed")
 @router.get("/habit/formed/get/{habit_id}")
 def formed_habit_get(habit_id: int, response: fastapi.Response, user: UserInfo = Depends(state.require_user)):
     with Database() as db:
-        if not db.try_execute(*SQLHelper.habit_get(habit_id)):
+        if not db.try_execute(*SQLHelper.formed_habit_get(habit_id)):
             response.status_code = 500
-            return response
+            return {"error": "failed to retrieve habit"}
         row = db.cursor().fetchone()
     if row is None:
         response.status_code = 404
-        return response
-    habit = HabitHelper.row_to_habit(row)
+        return {"error": "habit not found"}
     response.status_code = 200
-    return habit.model_dump_json()
+    return {"habit": dict(row)}
 
 
 @util.check_habit_ownership("formed")
 @router.get("/habit/formed/delete/{habit_id}")
 def formed_habit_delete(habit_id: int, response: fastapi.Response, user: UserInfo = Depends(state.require_user)):
     with Database() as db:
-        if db.try_execute(*SQLHelper.habit_delete(habit_id)):
+        if db.try_execute(*SQLHelper.formed_habit_delete(habit_id)):
             response.status_code = 200
             db.write()
         else:
             response.status_code = 500
-            return response
-    return {"success": True}
+            return {"error": "failed to delete habit"}
+    return {"id": habit_id}
 
 
 @util.check_habit_ownership("formed")
-@router.get("/habit/formed/list/{account_id}")
-def formed_habit_list(account_id: int, response: fastapi.Response, user: UserInfo = Depends(state.require_user)):
+@router.get("/habit/formed/list")
+def formed_habit_list(response: fastapi.Response, user: UserInfo = Depends(state.require_user)):
     with Database() as db:
-        if not db.try_execute(*SQLHelper.habit_list(account_id)):
+        if not db.try_execute(*SQLHelper.formed_habit_list(user.id)):
             response.status_code = 500
-            return response
+            return {"error": "failed to retrieve habits"}
         rows = db.cursor().fetchall()
     habits = []
     for row in rows:
-        habit = HabitHelper.row_to_habit(row)
-        habits.append(habit.model_dump_json())
+        habits.append(dict(row))
     response.status_code = 200
-    return habits
+    return {"habits": habits}
 
 
 @util.check_habit_ownership("formed")
 @router.post("/habit/formed/create")
-def formed_habit_create(info: HabitInfo, response: fastapi.Response, user: UserInfo = Depends(state.require_user)):
+def formed_habit_create(info: FormedHabitInfo, response: fastapi.Response, user: UserInfo = Depends(state.require_user)):
     with Database() as db:
         info.userId = user.id
-        print(*SQLHelper.habit_create(info))
-        if db.try_execute(*SQLHelper.habit_create(info)):
+        print(*SQLHelper.formed_habit_create(info))
+        if db.try_execute(*SQLHelper.formed_habit_create(info)):
             response.status_code = 200
             db.write()
         else:
             response.status_code = 500
-            return response
+            return {"error": "failed to create habit"}
         habit_id = db.created_id()
     return {"id": habit_id}
 
 
 @util.check_habit_ownership("formed")
 @router.post("/habit/formed/update")
-def formed_habit_update(info: HabitInfo, response: fastapi.Response, user: UserInfo = Depends(state.require_user)):
+def formed_habit_update(info: FormedHabitInfo, response: fastapi.Response, user: UserInfo = Depends(state.require_user)):
     # Expect the HabitInfo to include the id of the habit to update
     if getattr(info, "id", None) is None:
         response.status_code = 400
@@ -159,10 +156,10 @@ def formed_habit_update(info: HabitInfo, response: fastapi.Response, user: UserI
 
     habit_id = info.id
     with Database() as db:
-        if db.try_execute(*SQLHelper.habit_update(info, habit_id)):
+        if db.try_execute(*SQLHelper.formed_habit_update(info, habit_id)):
             response.status_code = 200
             db.write()
         else:
             response.status_code = 500
-            return response
-    return {"success": True, "habit_id": habit_id}
+            return {"error": "failed to update habit"}
+    return {"id": habit_id}
