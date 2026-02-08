@@ -30,30 +30,32 @@ def test_habit_endpoints(tmp_path):
     created_user_id = r.json().get("user_id")
     assert isinstance(created_user_id, int)
 
-    # create a habit
+    # create a formed habit (new schema)
     habit_payload = {
-        "account_id": created_user_id,
-        "habit_name": "TestHabit",
-        "habit_desc": "desc",
-        "steps": ["s1", "s2"],
-        "repeat": True,
-        "repeat_type": "Daily",
-        "reward": "gold",
-        "reward_frequency": "Monthly",
+        "userId": created_user_id,
+        "title": "TestHabit",
+        "type": "build",
+        "createdAt": "2026-02-05T00:00:00Z",
+        "details": {"desc": "desc", "steps": ["s1", "s2"], "reward": "gold", "reward_frequency": "Monthly"},
+        "completedAt": None,
+        "meta": {},
     }
 
     r2 = client.post("/habit/create", json=habit_payload)
     assert r2.status_code == 200
-    habit_id = r2.json().get("habit_id")
+    resp2 = r2.json()
+    # accept either 'habit_id' (legacy) or 'id' (normalized)
+    habit_id = resp2.get("id")
     assert isinstance(habit_id, int)
 
     # get the habit
     r3 = client.get(f"/habit/get/{habit_id}")
     assert r3.status_code == 200
     # endpoint returns a JSON string; parse it
-    body = r3.json()
-    # ensure habit name present
-    assert "TestHabit" in json.dumps(body)
+    body_str = r3.json()
+    body = json.loads(body_str)
+    # ensure habit title present
+    assert body.get("title") == "TestHabit"
 
     # list habits for account
     r4 = client.get(f"/habit/list/{created_user_id}")
@@ -65,7 +67,8 @@ def test_habit_endpoints(tmp_path):
     # now update the habit name
     updated = habit_payload.copy()
     updated["id"] = habit_id
-    updated["habit_name"] = "UpdatedName"
+    # use new schema field
+    updated["title"] = "UpdatedName"
     r5 = client.post("/habit/update", json=updated)
     assert r5.status_code == 200
     assert r5.json().get("success") is True
@@ -73,5 +76,6 @@ def test_habit_endpoints(tmp_path):
     # verify update
     r6 = client.get(f"/habit/get/{habit_id}")
     assert r6.status_code == 200
-    body2 = r6.json()
-    assert "UpdatedName" in json.dumps(body2)
+    body2_str = r6.json()
+    body2 = json.loads(body2_str)
+    assert body2.get("title") == "UpdatedName"
