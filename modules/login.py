@@ -14,8 +14,8 @@ router = fastapi.APIRouter()
 def login(user: UserInfo, response: fastapi.Response):
     # Placeholder logic for user authentication
     # todo: check against database
-    # key = uuid.uuid4().hex
-    key = "test_session_token"  # todo: remove this hardcoded token in favor of `key = uuid.uuid4().hex`
+    key = uuid.uuid4().hex
+    # key = "test_session_token"  # todo: remove this hardcoded token in favor of `key = uuid.uuid4().hex`
     full_user = util.get_full_user(user)
     state.sessions[key] = full_user
     response.set_cookie(key="session_token", value=key)
@@ -57,12 +57,11 @@ def signup(user: UserInfo, response: fastapi.Response):
             response.status_code = 400
             return {"error": "user already exists"}
 
-    key = "test_session_token"  # todo: remove this hardcoded token in favor of `key = uuid.uuid4().hex`
+    key = uuid.uuid4().hex  # todo: remove this hardcoded token in favor of `key = uuid.uuid4().hex`
     full_user = util.get_full_user(user)
 
     state.sessions[key] = full_user
     response.set_cookie(key="session_token", value=key)
     full_user.password = ""
     ret = full_user
-    return ret.model_dump_json()
-
+    return { "success": True, "user": ret }

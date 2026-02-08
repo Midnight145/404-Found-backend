@@ -21,11 +21,6 @@ app.include_router(user.router)
 app.include_router(login.router)
 app.include_router(child.router)
 
-
-
-
-
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "*"],  # must be explicit
