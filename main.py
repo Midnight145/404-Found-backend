@@ -10,7 +10,7 @@ from modules.habits import build_habits, formed_habits, break_habits
 from modules import tasks, user, login, child
 
 load_dotenv.load_dotenv()
-db_filename = os.getenv("DATABASE_FILE")
+db_filename = os.getenv("DATABASE_FILE", "database.db")
 database.Database.init(db_filename)
 app = fastapi.FastAPI()
 app.include_router(build_habits.router)
