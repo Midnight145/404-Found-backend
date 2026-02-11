@@ -23,7 +23,7 @@ app.include_router(child.router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "*"],  # must be explicit
+    allow_origins=["http://localhost:5173"],  # must be explicit
     allow_credentials=True,                   # REQUIRED for cookies
     allow_methods=["*"],
     allow_headers=["*"],
