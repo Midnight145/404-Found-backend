@@ -2,6 +2,7 @@ import typing
 from typing import List, Optional, Any
 
 import pydantic
+from pydantic import Field
 
 
 # Backend datatypes migrated to match the frontend model shapes.
@@ -106,3 +107,24 @@ class ChildInfo(pydantic.BaseModel):
     age: Optional[int] = None
     createdAt: Optional[int] = None
     theme: Optional[str] = "pink"
+
+
+class Item(pydantic.BaseModel):
+    """Represents an item in the user's inventory."""
+    id: Optional[int] = None
+    name: Optional[str] = None
+    path: Optional[str] = None
+    price: Optional[int] = None
+    placement: Optional[str] = None
+    type_: str = Field(validation_alias="type")
+
+
+class ItemField(pydantic.BaseModel):
+    id: Optional[int] = None
+    equipped: bool = False
+
+class GameProfile(pydantic.BaseModel):
+    """Represents a user's game profile, including stats and progress."""
+    id: int
+    coins: int
+    inventory: List[ItemField] = []

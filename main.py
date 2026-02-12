@@ -7,7 +7,7 @@ import load_dotenv
 import os
 from state import database
 from modules.habits import build_habits, formed_habits, break_habits
-from modules import tasks, user, login, child
+from modules import tasks, user, login, child, game
 
 load_dotenv.load_dotenv()
 db_filename = os.getenv("DATABASE_FILE", "database.db")
@@ -20,6 +20,7 @@ app.include_router(tasks.router)
 app.include_router(user.router)
 app.include_router(login.router)
 app.include_router(child.router)
+app.include_router(game.router)
 
 app.add_middleware(
     CORSMiddleware,

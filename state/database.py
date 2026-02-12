@@ -16,6 +16,7 @@ class Database:
         Database.mutex = threading.Lock()
         with Database() as db:
             db.create_tables()
+            db.populate_items(db)
             # commit created tables so the DB is usable immediately
             db.write()
 
@@ -87,3 +88,34 @@ class Database:
         self.__connection.execute(
             "CREATE TABLE IF NOT EXISTS children (id INTEGER PRIMARY KEY AUTOINCREMENT, parentId INTEGER, name TEXT, age INTEGER, code TEXT, createdAt TEXT, theme TEXT)"
         )
+        self.__connection.execute(
+            "CREATE TABLE IF NOT EXISTS game_profiles (id INTEGER PRIMARY KEY, coins INTEGER, inventory TEXT)"
+        )
+        self.__connection.execute(
+            "CREATE TABLE IF NOT EXISTS items (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, price INTEGER, type TEXT, path TEXT UNIQUE, placement TEXT)"
+        )
+
+    @staticmethod
+    def populate_items(db):
+        def create_item(name: str, path: str, price: int, type_: str, placement: str) -> int | None:
+            def item_create(name, path, price, type_, placement):
+                query = "INSERT OR IGNORE INTO items (name, path, price, type, placement) VALUES (?, ?, ?, ?, ?)"
+                return query, (name, path, price, type_, placement)
+            if db.try_execute(*item_create(name, path, price, type_, placement)):
+                db.write()
+                return db.created_id()
+            else:
+                return None
+
+        pass
+
+        if create_item("Red Shirt", "/items/red_shirt.png", 100, "clothing", "body") is None:
+            print("Failed to create item 'Red Shirt'")
+
+        """
+        Usage:
+        if create_item("Red Shirt", "/items/red_shirt.png", 100, "clothing", "body") is None:
+            print("Failed to create item 'Red Shirt'")
+        if create_item("Blue Hat", "/items/blue_hat.png", 50, "clothing", "head") is None:
+        ....
+        """

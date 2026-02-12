@@ -1,6 +1,7 @@
 import json
 
-from modules.datatypes import UserInfo, BuildHabitInfo, BreakHabitInfo, TaskInfo, FormedHabitInfo, ChildInfo
+from modules.datatypes import UserInfo, BuildHabitInfo, BreakHabitInfo, TaskInfo, FormedHabitInfo, ChildInfo, \
+    GameProfile
 from state.database import Database
 
 
@@ -316,3 +317,43 @@ def user_update_partial(fields: dict, user_id: int):
 def task_list_pending(assignee_id: int):
     query = "SELECT * FROM tasks WHERE assigneeId = ? AND needsApproval = 1 AND createdByRole = 'provider'"
     return query, (assignee_id,)
+
+def get_game_profile(userId: int):
+    query = "SELECT * FROM game_profiles WHERE id = ?"
+    return query, (userId,)
+
+def create_game_profile(profile: GameProfile, userid):
+    query = "INSERT INTO game_profiles (id, coins, inventory, equipped) VALUES (?, ?, ?, ?)"
+    inventory_json = json.dumps(profile.inventory) if profile.inventory else None
+    equipped_json = json.dumps(profile.equipped) if profile.equipped else None
+    return query, (userid, profile.coins, inventory_json, equipped_json)
+
+def profile_update_partial(fields: dict, profile_id: int):
+    """
+    Build a parameterized UPDATE for only the provided fields.
+    Returns a tuple like (sql, param1, param2, ...)
+    """
+    if not fields:
+        raise ValueError("no fields to update")
+
+    set_clauses = []
+    params = []
+    for col, val in fields.items():
+        # serialize complex types commonly stored as JSON
+        if isinstance(val, (list, dict)):
+            val = json.dumps(val)
+        set_clauses.append(f"{col} = ?")
+        params.append(val)
+
+    params.append(profile_id)
+    set_clause = ", ".join(set_clauses)
+    sql = f"UPDATE game_profiles SET {set_clause} WHERE id = ?"
+    return sql, tuple(params)
+
+def get_item(item_id: int):
+    query = "SELECT * FROM items WHERE id = ?"
+    return query, (item_id,)
+
+def item_list():
+    query = "SELECT * FROM items"
+    return query, ()
