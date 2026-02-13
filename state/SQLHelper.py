@@ -323,10 +323,9 @@ def get_game_profile(userId: int):
     return query, (userId,)
 
 def create_game_profile(profile: GameProfile, userid):
-    query = "INSERT INTO game_profiles (id, coins, inventory, equipped) VALUES (?, ?, ?, ?)"
-    inventory_json = json.dumps(profile.inventory) if profile.inventory else None
-    equipped_json = json.dumps(profile.equipped) if profile.equipped else None
-    return query, (userid, profile.coins, inventory_json, equipped_json)
+    query = "INSERT INTO game_profiles (id, coins, inventory) VALUES (?, ?, ?)"
+    inventory_json = json.dumps(profile.inventory) if profile.inventory else "[]"
+    return query, (userid, profile.coins, inventory_json)
 
 def profile_update_partial(fields: dict, profile_id: int):
     """
